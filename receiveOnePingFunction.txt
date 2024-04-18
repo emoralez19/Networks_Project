@@ -1,0 +1,34 @@
+def receiveOnePing(mySocket, ID, timeout, destAddr):
+    timeLeft = timeout
+
+    while 1: 
+        startedSelect = time.time()
+        whatReady = select.select([mySocket], [], [], timeLeft)
+        howLongInSelect = (time.time() - startedSelect)
+        if whatReady[0] == []: # Timeout
+            print(whatReady[0])
+            return "Request timed out. whatready"
+        
+        timeReceived = time.time() 
+        recPacket, addr = mySocket.recvfrom(1024)
+    
+        #Fill in start
+
+        icmpHeader = recPacket[20:28]
+        icmpType, code, checksum, packetID, sequence = struct.unpack('bbHHh', icmpHeader)
+
+        #check if packet is an echo reply (type = 0) and is of the same ID as the request
+        if icmpType == 0 and code == 0 and packetID == ID:
+            # Calculate the round-trip time
+
+            # get data from struct and extract the time the data was sent
+            timeSent = struct.unpack("d", recPacket[28:])[0]
+            # find the round trip time and convert into seconds
+            delay = (timeReceived - timeSent) * 1000
+            return delay
+
+        #Fill in end
+
+        timeLeft = timeLeft - howLongInSelect
+        if timeLeft <= 0:
+            return "Request timed out.timeleft "
